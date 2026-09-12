@@ -1,0 +1,17 @@
+services:
+  reranker:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+
+  api:
+    environment:
+      # GPU reranking is ~1-2s/query; keep the tight, app-default timeout.
+      # Hardcoded (not a ${VAR:-default}) so it actually overrides the base
+      # file's own RERANKER_TIMEOUT_SECONDS=30 rather than reading the same
+      # host env var with a different fallback that never applies.
+      RERANKER_TIMEOUT_SECONDS: "10"

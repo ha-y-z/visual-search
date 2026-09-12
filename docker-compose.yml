@@ -1,0 +1,55 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+    image: ai-shopping-assistant-api
+    ports:
+      - "8000:8000"
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      DATA_DIR: /data
+      RERANKER_URL: http://reranker:8001
+      RERANK_ENABLED: ${RERANK_ENABLED:-true}
+      # CPU reranking of the 2B model takes ~22-27s/query; the app default
+      # (10s, tuned for GPU) would time out on every search on a CPU host.
+      # The GPU overlay tightens this back down.
+      RERANKER_TIMEOUT_SECONDS: ${RERANKER_TIMEOUT_SECONDS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./apps/api/data:/data
+      - hf-cache:/root/.cache/huggingface
+    depends_on:
+      # service_healthy would block api startup on the reranker finishing a
+      # slow model load; Phase 4 built api to run fine (degraded) without a
+      # reranker at all, so only ordering is needed here, not a health gate.
+      reranker:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+
+  reranker:
+    build:
+      context: ./services/reranker
+    image: ai-shopping-assistant-reranker
+    ports:
+      - "8001:8001"
+    environment:
+      RERANKER_MODEL: ${RERANKER_MODEL:-Qwen/Qwen3-VL-Reranker-2B}
+      RERANKER_DEVICE: ${RERANKER_DEVICE:-auto}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./apps/api/data/products:/data/products:ro
+      - hf-cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 300s
+      retries: 5
+
+volumes:
+  hf-cache:

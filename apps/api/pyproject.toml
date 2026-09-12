@@ -4,4 +4,85 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "bm25s>=0.3.11",
+    "chromadb>=1.5.9",
+    "fastapi>=0.141.1",
+    "langchain>=1.4.0",
+    "langchain-core>=1.6.2",
+    "langchain-google-genai>=4.4.0",
+    "langgraph>=1.2.11",
+    "numpy>=2.5.3",
+    "open-clip-torch>=3.3.0",
+    "pandas>=3.0.5",
+    "pillow>=12.3.0",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.3",
+    "python-multipart>=0.0.32",
+    "torch>=2.14.0",
+    "torchvision>=0.29.0",
+    "transformers>=5.17.0",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# This service only runs CLIP/SigLIP encoders on CPU. On Linux (the Docker
+# build target) route torch/torchvision to PyTorch's CPU-only wheel index so
+# the multi-GB bundled CUDA runtime isn't pulled in; on macOS (local dev on
+# this machine) PyPI's default wheels are already CPU/MPS-only, and that
+# index doesn't publish macOS wheels at all, so it's left untouched there.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "chromadb.*",
+    "bm25s.*",
+    "sentence_transformers.*",
+    "transformers.*",
+    "langchain.*",
+    "langchain_core.*",
+    "langchain_google_genai.*",
+    "langgraph.*",
+    "pandas.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
