@@ -42,7 +42,7 @@ services:
       RERANKER_DEVICE: ${RERANKER_DEVICE:-auto}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
-      - ./apps/data/products:/data/products:ro
+      - ./apps/api/data/products:/data/products:ro
       - hf-cache:/root/.cache/huggingface
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
