@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { resetSession, search, streamChat, streamChatInit } from '@/api/client'
 import type { ChatMessage, SearchResult } from '@/api/types'
 import ProductCard from '@/components/ProductCard.vue'
+
+function renderMarkdown(text: string) {
+  return DOMPurify.sanitize(marked.parse(text, { async: false }))
+}
 
 const phase = ref<'idle' | 'results'>('idle')
 const queryText = ref('')
@@ -87,13 +93,16 @@ async function newSearch() {
 <template>
   <div class="search-page">
     <form v-if="phase === 'idle'" class="search-bar" @submit.prevent="runSearch">
-      <input v-model="queryText" type="text" placeholder="Describe what you're looking for…" />
+      <input v-model="queryText" type="text" placeholder="Describe what you're looking for…" :disabled="searching" />
       <label class="upload">
         📷
-        <input type="file" accept="image/*" @change="onImageChange" hidden />
+        <input type="file" accept="image/*" @change="onImageChange" hidden :disabled="searching" />
       </label>
       <span v-if="queryImage" class="filename">{{ queryImage.name }}</span>
-      <button type="submit" :disabled="searching">{{ searching ? 'Searching…' : 'Search' }}</button>
+      <button type="submit" :disabled="searching">
+        <span v-if="searching" class="spinner"></span>
+        {{ searching ? 'Searching…' : 'Search' }}
+      </button>
     </form>
 
     <div v-else class="results">
@@ -105,11 +114,20 @@ async function newSearch() {
 
       <div class="chat">
         <div class="messages">
-          <p v-for="(m, i) in messages" :key="i" :class="m.role">{{ m.text }}</p>
+          <template v-for="(m, i) in messages" :key="i">
+            <p v-if="m.role === 'user'" :class="m.role">{{ m.text }}</p>
+            <div
+              v-else-if="!m.text && i === messages.length - 1 && (chatPending || searching)"
+              class="assistant typing"
+            >
+              <span></span><span></span><span></span>
+            </div>
+            <div v-else :class="m.role" v-html="renderMarkdown(m.text)"></div>
+          </template>
         </div>
         <form class="chat-input" @submit.prevent="sendChat">
           <input v-model="chatText" type="text" placeholder="Keep chatting…" :disabled="chatPending" />
-          <button type="submit" :disabled="chatPending">Send</button>
+          <button type="submit" :disabled="chatPending">{{ chatPending ? 'Sending…' : 'Send' }}</button>
         </form>
       </div>
     </div>
@@ -192,6 +210,23 @@ button:disabled {
   padding: 0.4rem 0.7rem;
   border-radius: 10px;
 }
+.messages .assistant :deep(p) {
+  margin: 0 0 0.5rem;
+}
+.messages .assistant :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.messages .assistant :deep(pre) {
+  background: #f4f4f4;
+  padding: 0.5rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.messages .assistant :deep(ul),
+.messages .assistant :deep(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.4rem;
+}
 .chat-input {
   display: flex;
   gap: 0.5rem;
@@ -201,5 +236,51 @@ button:disabled {
   padding: 0.5rem 0.8rem;
   border-radius: 999px;
   border: 1px solid #ccc;
+}
+.spinner {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.4em;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.typing {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem 0;
+}
+.typing span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #999;
+  animation: bounce 1s infinite ease-in-out;
+}
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>
