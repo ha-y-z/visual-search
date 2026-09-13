@@ -15,6 +15,16 @@ const FILTER_COLUMNS = [
   'usage',
 ] as const
 
+const FILTER_LABELS: Record<(typeof FILTER_COLUMNS)[number], string> = {
+  gender: 'Gender',
+  masterCategory: 'Category',
+  subCategory: 'Subcategory',
+  articleType: 'Article Type',
+  baseColour: 'Colour',
+  season: 'Season',
+  usage: 'Usage',
+}
+
 const filterOptions = ref<FilterOptions | null>(null)
 const filters = ref<Record<string, string>>({})
 const page = ref(1)
@@ -29,6 +39,9 @@ async function load() {
 
 onMounted(async () => {
   filterOptions.value = await getFilterOptions()
+  for (const col of FILTER_COLUMNS) {
+    filters.value[col] = ''
+  }
   await load()
 })
 
@@ -43,7 +56,7 @@ watch(page, load)
   <div class="products-page">
     <div class="filters" v-if="filterOptions">
       <select v-for="col in FILTER_COLUMNS" :key="col" v-model="filters[col]">
-        <option value="">{{ col }}</option>
+        <option value="">All {{ FILTER_LABELS[col] }}</option>
         <option v-for="value in filterOptions[col]" :key="value" :value="value">{{ value }}</option>
       </select>
     </div>
