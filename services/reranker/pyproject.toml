@@ -1,15 +1,14 @@
 [project]
 name = "ai-shopping-assistant-reranker"
 version = "0.1.0"
-description = "Standalone Qwen3-VL cross-encoder reranking service"
+description = "Standalone cross-encoder reranking service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.141.1",
     "pydantic-settings>=2.15.0",
-    "sentence-transformers[image]>=6.0.1",
+    "sentence-transformers>=6.0.1",
     "torch>=2.14.0",
-    "torchvision>=0.19.0",
     "uvicorn[standard]>=0.52.4",
 ]
 

@@ -33,7 +33,7 @@ def test_rerank_disabled_skips_http_call_entirely(monkeypatch):
 
     monkeypatch.setattr(reranker.client, "post", _boom)
 
-    result = reranker.rerank("shoes", "", ["a", "b"])
+    result = reranker.rerank("shoes", ["a", "b"])
 
     assert set(result) == {"uri-a.jpg", "uri-b.jpg"}
 
@@ -46,7 +46,7 @@ def test_rerank_degrades_gracefully_when_reranker_unreachable(monkeypatch):
 
     reranker = _make_reranker({"uri-a.jpg": "meta-a", "uri-b.jpg": "meta-b"})
 
-    result = reranker.rerank("shoes", "", ["a", "b"])
+    result = reranker.rerank("shoes", ["a", "b"])
 
     assert set(result) == {"uri-a.jpg", "uri-b.jpg"}
 
@@ -67,6 +67,6 @@ def test_rerank_uses_reranker_response_ordering(monkeypatch):
 
     monkeypatch.setattr(reranker.client, "post", lambda *a, **k: _FakeResponse())
 
-    result = reranker.rerank("shoes", "", ["a", "b"])
+    result = reranker.rerank("shoes", ["a", "b"])
 
     assert result == [reranker.create_documents(["a", "b"])[1]["image"], reranker.create_documents(["a", "b"])[0]["image"]]

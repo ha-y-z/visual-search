@@ -30,6 +30,5 @@ def health() -> HealthResponse:
 
 @app.post("/rerank", response_model=list[RerankResult])
 def rerank(request: RerankRequest) -> list[dict[str, int | float | str]]:
-    query = request.query.model_dump(exclude_none=True)
-    documents = [doc.model_dump() for doc in request.documents]
-    return app.state.reranker.rerank(query, documents, top_k=request.top_k)
+    documents = [doc.text for doc in request.documents]
+    return app.state.reranker.rerank(request.query.text, documents, top_k=request.top_k)

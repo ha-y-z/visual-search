@@ -2,13 +2,11 @@ from pydantic import BaseModel
 
 
 class RerankQuery(BaseModel):
-    text: str | None = None
-    image: str | None = None
+    text: str
 
 
 class RerankDocument(BaseModel):
     text: str
-    image: str
 
 
 class RerankRequest(BaseModel):

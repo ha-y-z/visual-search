@@ -20,23 +20,20 @@ class Reranker:
             documents.append({"text": metadata, "image": image_uri})
         return documents
 
-    def rerank(self, text_query: str, image_base64: str, ids: list[str]) -> list[str]:
+    def rerank(self, text_query: str, ids: list[str]) -> list[str]:
         documents = self.create_documents(ids)
         unranked = [doc["image"] for doc in documents]
 
-        if not settings.RERANK_ENABLED:
+        if not settings.RERANK_ENABLED or not text_query:
             return unranked
-
-        query: dict[str, str] = {}
-        if text_query:
-            query["text"] = text_query
-        if image_base64:
-            query["image"] = f"data:image/jpeg;base64,{image_base64}"
 
         try:
             response = self.client.post(
                 f"{settings.RERANKER_URL}/rerank",
-                json={"query": query, "documents": documents},
+                json={
+                    "query": {"text": text_query},
+                    "documents": [{"text": doc["text"]} for doc in documents],
+                },
             )
             response.raise_for_status()
             rankings = response.json()

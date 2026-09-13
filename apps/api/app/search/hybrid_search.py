@@ -58,7 +58,7 @@ class HybridSearch:
 
         with timed_stage(logger, "rerank"):
             reranked_result_uris: list[str] = self.reranker.rerank(
-                text_query or "", image_base64 or "", unique_result_ids
+                text_query or "", unique_result_ids
             )
 
         image_dir = settings.HIGH_RES_IMAGE_DIR.resolve()

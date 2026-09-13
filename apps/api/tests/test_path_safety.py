@@ -60,7 +60,7 @@ class _StubReranker:
     def __init__(self, uris: list[str]):
         self.uris = uris
 
-    def rerank(self, text_query: str, image_base64: str, ids: list[str]) -> list[str]:
+    def rerank(self, text_query: str, ids: list[str]) -> list[str]:
         return self.uris
 
 
