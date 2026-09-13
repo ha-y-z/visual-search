@@ -31,6 +31,15 @@ function onImageChange(e: Event) {
 
 async function runSearch() {
   if (!queryText.value && !queryImage.value) return
+  if (phase.value === 'results') {
+    generation++
+    searchResult.value = null
+    productIds.value = []
+    messages.value = []
+    chatText.value = ''
+    chatPending.value = false
+    await resetSession()
+  }
   searching.value = true
   const gen = generation
   try {
@@ -39,6 +48,8 @@ async function runSearch() {
     searchResult.value = result
     productIds.value = result.product_ids
     phase.value = 'results'
+    queryText.value = ''
+    queryImage.value = null
     messages.value = [{ role: 'assistant', text: '' }]
     const replyIndex = 0
     await streamChatInit(result, (event) => {
@@ -77,22 +88,11 @@ async function sendChat() {
   }
 }
 
-async function newSearch() {
-  generation++
-  await resetSession()
-  phase.value = 'idle'
-  queryText.value = ''
-  queryImage.value = null
-  searchResult.value = null
-  productIds.value = []
-  messages.value = []
-  chatText.value = ''
-}
 </script>
 
 <template>
   <div class="search-page">
-    <form v-if="phase === 'idle'" class="search-bar" @submit.prevent="runSearch">
+    <form class="search-bar" :class="{ compact: phase === 'results' }" @submit.prevent="runSearch">
       <input v-model="queryText" type="text" placeholder="Describe what you're looking for…" :disabled="searching" />
       <label class="upload">
         📷
@@ -105,14 +105,12 @@ async function newSearch() {
       </button>
     </form>
 
-    <div v-else class="results">
-      <button class="new-search" @click="newSearch">New search</button>
-
+    <div v-if="phase === 'results'" class="results">
       <div class="grid">
         <ProductCard v-for="id in productIds" :key="id" :id="id" />
       </div>
 
-      <div class="chat">
+      <div v-if="!searching" class="chat">
         <div class="messages">
           <template v-for="(m, i) in messages" :key="i">
             <p v-if="m.role === 'user'" :class="m.role">{{ m.text }}</p>
@@ -147,6 +145,10 @@ async function newSearch() {
   justify-content: center;
   margin-top: 20vh;
 }
+.search-bar.compact {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
 .search-bar input[type='text'] {
   flex: 1;
   max-width: 480px;
@@ -176,9 +178,6 @@ button {
 button:disabled {
   opacity: 0.5;
   cursor: default;
-}
-.new-search {
-  margin-bottom: 1rem;
 }
 .grid {
   display: grid;
