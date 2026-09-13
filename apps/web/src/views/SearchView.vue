@@ -92,13 +92,26 @@ async function sendChat() {
 
 <template>
   <div class="search-page">
+    <div v-if="phase === 'idle'" class="hero">
+      <h1>Find it by describing it.</h1>
+      <p>Search with words, a photo, or both — then refine with the assistant.</p>
+    </div>
+
     <form class="search-bar" :class="{ compact: phase === 'results' }" @submit.prevent="runSearch">
+      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
       <input v-model="queryText" type="text" placeholder="Describe what you're looking for…" :disabled="searching" />
-      <label class="upload">
-        📷
+      <span v-if="queryImage" class="filename">{{ queryImage.name }}</span>
+      <label class="upload" title="Upload an image">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="15" rx="3" />
+          <circle cx="12" cy="12.5" r="3.5" />
+          <path d="M8.5 5 10 3h4l1.5 2" />
+        </svg>
         <input type="file" accept="image/*" @change="onImageChange" hidden :disabled="searching" />
       </label>
-      <span v-if="queryImage" class="filename">{{ queryImage.name }}</span>
       <button type="submit" :disabled="searching">
         <span v-if="searching" class="spinner"></span>
         {{ searching ? 'Searching…' : 'Search' }}
@@ -111,6 +124,10 @@ async function sendChat() {
       </div>
 
       <div v-if="!searching" class="chat">
+        <div class="chat-header">
+          <span class="dot"></span>
+          Assistant
+        </div>
         <div class="messages">
           <template v-for="(m, i) in messages" :key="i">
             <p v-if="m.role === 'user'" :class="m.role">{{ m.text }}</p>
@@ -134,69 +151,185 @@ async function sendChat() {
 
 <style scoped>
 .search-page {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem 3rem;
+}
+.hero {
+  text-align: center;
+  margin: 18vh auto 2rem;
+  max-width: 640px;
+}
+.hero h1 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
 }
 .search-bar {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   align-items: center;
-  justify-content: center;
-  margin-top: 20vh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.35rem 0.35rem 0.35rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.search-bar:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md), var(--ring);
 }
 .search-bar.compact {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+  max-width: none;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+.search-bar.compact:focus-within {
+  box-shadow: var(--shadow-sm), var(--ring);
+}
+svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.search-icon {
+  flex-shrink: 0;
+  color: var(--muted);
 }
 .search-bar input[type='text'] {
   flex: 1;
-  max-width: 480px;
-  padding: 0.6rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid #ccc;
+  min-width: 0;
+  padding: 0.6rem 0.5rem;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+.search-bar input[type='text']::placeholder,
+.chat-input input::placeholder {
+  color: #a1a1aa;
 }
 .upload {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: var(--muted);
   cursor: pointer;
-  font-size: 1.3rem;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.upload:hover {
+  background: var(--subtle);
+  color: var(--text);
 }
 .filename {
   font-size: 0.8rem;
-  color: #666;
-  max-width: 120px;
+  color: var(--text);
+  background: var(--subtle);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  max-width: 140px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 button {
-  padding: 0.6rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.6rem 1.25rem;
   border-radius: 999px;
   border: none;
-  background: #222;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
+}
+button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
+}
+.results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+@media (min-width: 960px) {
+  .results {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+  .chat {
+    position: sticky;
+    top: 5rem;
+  }
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.25rem;
 }
 .chat {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.chat-header .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #22c55e;
 }
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-height: 40vh;
+  gap: 0.85rem;
+  max-height: 60vh;
   overflow-y: auto;
-  margin-bottom: 0.75rem;
+  padding: 1.1rem;
+  font-size: 0.925rem;
 }
 .messages p {
   margin: 0;
@@ -204,37 +337,73 @@ button:disabled {
 }
 .messages p.user {
   align-self: flex-end;
-  background: #222;
-  color: #fff;
-  padding: 0.4rem 0.7rem;
-  border-radius: 10px;
+  max-width: 85%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.5rem 0.85rem;
+  border-radius: 16px 16px 4px 16px;
+}
+.messages .assistant {
+  color: var(--text);
 }
 .messages .assistant :deep(p) {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.6rem;
 }
 .messages .assistant :deep(p:last-child) {
   margin-bottom: 0;
 }
+.messages .assistant :deep(strong) {
+  font-weight: 600;
+}
+.messages .assistant :deep(code) {
+  background: var(--subtle);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
 .messages .assistant :deep(pre) {
-  background: #f4f4f4;
-  padding: 0.5rem;
-  border-radius: 6px;
+  background: var(--subtle);
+  padding: 0.75rem;
+  border-radius: 8px;
   overflow-x: auto;
+}
+.messages .assistant :deep(pre code) {
+  background: none;
+  padding: 0;
 }
 .messages .assistant :deep(ul),
 .messages .assistant :deep(ol) {
   margin: 0.5rem 0;
-  padding-left: 1.4rem;
+  padding-left: 1.3rem;
+}
+.messages .assistant :deep(li) {
+  margin: 0.2rem 0;
 }
 .chat-input {
   display: flex;
   gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
 }
 .chat-input input {
   flex: 1;
-  padding: 0.5rem 0.8rem;
+  min-width: 0;
+  padding: 0.55rem 0.95rem;
   border-radius: 999px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.chat-input input:focus {
+  border-color: var(--border-strong);
+  box-shadow: var(--ring);
+}
+.chat-input button {
+  padding: 0.55rem 1.1rem;
 }
 .spinner {
   display: inline-block;
@@ -261,7 +430,7 @@ button:disabled {
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
-  background: #999;
+  background: var(--muted);
   animation: bounce 1s infinite ease-in-out;
 }
 .typing span:nth-child(2) {
