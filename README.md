@@ -148,10 +148,10 @@ flowchart LR
     User -->|text / image| API["apps/api (FastAPI)"]
     API -->|lexical| BM25[(BM25 index)]
     API -->|semantic| Chroma[(ChromaDB + SigLIP)]
-    API -->|/rerank| Reranker["services/reranker (FastAPI + Qwen3-VL)"]
+    API -->|/rerank| Reranker["services/reranker \n(FastAPI + Qwen3-VL)"]
     API -->|product metadata| SQLite[(SQLite)]
-    API -->|chat| Gemini[("Google Gemini (LangChain agent)")]
-    Reranker -->|reads images read-only| Images[(product images)]
+    API -->|chat| Gemini[("Google Gemini \n(LangChain agent)")]
+    Reranker -->|reads images \nread-only| Images[(product images)]
 ```
 
 `apps/api` owns all product data (SQLite + Chroma + BM25) and the conversational agent;
