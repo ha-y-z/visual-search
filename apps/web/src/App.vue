@@ -3,10 +3,10 @@
 <template>
   <header class="topbar">
     <div class="topbar-inner">
-      <RouterLink to="/" class="brand">
+      <a href="/" class="brand">
         <span class="brand-mark">◆</span>
         Visual Search
-      </RouterLink>
+      </a>
       <nav>
         <RouterLink to="/">Search</RouterLink>
         <RouterLink to="/products">Products</RouterLink>
