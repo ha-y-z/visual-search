@@ -6,6 +6,16 @@ from app.config import resolve_legacy_data_path
 from .sql.sqlite import SQLDatabase
 from .vector.chromadb import VectorDatabase
 
+FILTER_COLUMNS = (
+    "gender",
+    "masterCategory",
+    "subCategory",
+    "articleType",
+    "baseColour",
+    "season",
+    "usage",
+)
+
 
 class DatabaseService:
     def __init__(self):
@@ -83,3 +93,33 @@ class DatabaseService:
             query, (article_type,) if article_type else ()
         )
         return [row[0] for row in results]
+
+    def get_filter_options(self) -> dict[str, list[str]]:
+        return {
+            column: [
+                row[0]
+                for row in self.sql_db.execute_query(
+                    f"SELECT DISTINCT {column} FROM products "
+                    f"WHERE {column} IS NOT NULL ORDER BY {column}"
+                )
+            ]
+            for column in FILTER_COLUMNS
+        }
+
+    def list_products(
+        self, filters: dict[str, str], limit: int, offset: int
+    ) -> tuple[list[tuple], int]:
+        active_columns = [column for column in FILTER_COLUMNS if filters.get(column)]
+        where_clause = " AND ".join(f"{column} = ?" for column in active_columns) or "1=1"
+        params = tuple(filters[column] for column in active_columns)
+
+        total = self.sql_db.execute_query(
+            f"SELECT COUNT(*) FROM products WHERE {where_clause}", params
+        )[0][0]
+        rows = self.sql_db.execute_query(
+            "SELECT id, productDisplayName, gender, masterCategory, subCategory, "
+            f"articleType, baseColour, season, usage FROM products WHERE {where_clause} "
+            "ORDER BY id LIMIT ? OFFSET ?",
+            (*params, limit, offset),
+        )
+        return rows, total

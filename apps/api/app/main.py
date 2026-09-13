@@ -11,7 +11,15 @@ from PIL import UnidentifiedImageError
 from app.controller import Controller
 from app.logging_config import configure_logging
 from app.product_images import paths_to_product_ids, product_id_to_path, product_ids_to_paths
-from app.schemas import ChatMessage, ErrorResponse, HealthResponse, SearchResult
+from app.schemas import (
+    ChatMessage,
+    ErrorResponse,
+    FilterOptions,
+    HealthResponse,
+    ProductListResponse,
+    ProductSummary,
+    SearchResult,
+)
 
 configure_logging()
 
@@ -103,6 +111,53 @@ def chat(message: ChatMessage, controller: ControllerDep) -> StreamingResponse:
 def reset_session(controller: ControllerDep) -> dict[str, str]:
     controller.reset_session()
     return {"status": "reset"}
+
+
+@app.get("/api/products/filters", response_model=FilterOptions)
+def product_filters(controller: ControllerDep) -> FilterOptions:
+    return FilterOptions(**controller.db.get_filter_options())
+
+
+@app.get("/api/products", response_model=ProductListResponse)
+def list_products(
+    controller: ControllerDep,
+    page: int = 1,
+    page_size: int = 24,
+    gender: str | None = None,
+    masterCategory: str | None = None,
+    subCategory: str | None = None,
+    articleType: str | None = None,
+    baseColour: str | None = None,
+    season: str | None = None,
+    usage: str | None = None,
+) -> ProductListResponse:
+    filters = {
+        "gender": gender,
+        "masterCategory": masterCategory,
+        "subCategory": subCategory,
+        "articleType": articleType,
+        "baseColour": baseColour,
+        "season": season,
+        "usage": usage,
+    }
+    rows, total = controller.db.list_products(
+        filters, limit=page_size, offset=(page - 1) * page_size
+    )
+    items = [
+        ProductSummary(
+            id=row[0],
+            productDisplayName=row[1],
+            gender=row[2],
+            masterCategory=row[3],
+            subCategory=row[4],
+            articleType=row[5],
+            baseColour=row[6],
+            season=row[7],
+            usage=row[8],
+        )
+        for row in rows
+    ]
+    return ProductListResponse(items=items, total=total)
 
 
 @app.get("/api/images/{product_id}", responses={404: {"model": ErrorResponse}})
