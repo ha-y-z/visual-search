@@ -1,5 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![No Maintenance Intended](https://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
-# AI Shopping Assistant
+# Visual Search
 
 ![frontpage](docs/pictures/frontpage.png)
 
